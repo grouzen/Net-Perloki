@@ -24,10 +24,9 @@ sub connect
 {
     my ($self, $params) = @_;
     
-    $self->{connection} = Net::Jabber::Client->new(debuglevel => 2, debugfile => "stdout");
+    $self->{connection} = Net::Jabber::Client->new(debuglevel => 2, debugfile => "debug.log");
     $self->{connection}->SetMessageCallBacks(chat => \&_CBMessageChat);
-    $self->{connection}->SetPresenceCallBacks(subscribe => \&_CBPresenceSubscribe,
-                                              subscribed => \&_CBPresenceSubscribed);
+    $self->{connection}->SetPresenceCallBacks(subscribe => \&_CBPresenceSubscribe);
     my $jid = Net::Jabber::JID->new($params->{jid});
     
     my $status = $self->{connection}->Connect(hostname => $params->{server}, port => $params->{port});
@@ -37,8 +36,8 @@ sub connect
     }
 
     my @auth_result = $self->{connection}->AuthSend(username => $jid->GetUserID(),
-                                             password => $params->{password},
-                                             resource => $jid->GetResource());
+                                                    password => $params->{password},
+                                                    resource => $jid->GetResource());
     if($auth_result[0] ne "ok") {
         $self->{perloki}->{log}->write("Auth failed: $auth_result[0]: $auth_result[1]\n");
         return 0;
@@ -51,6 +50,8 @@ sub connect
 
     # TODO: reconnection.
     while(defined($self->{connection}->Process())) {}
+
+    return 1;
 }
 
 sub disconnect
@@ -73,8 +74,10 @@ sub _CBMessageChat
     my $from = $message->GetFrom();
     my $body = $message->GetBody();
     my $response = '';
+    my $jid = Net::Jabber::JID->new($from);
+    my $user = $jid->GetUserID() . '@' . $jid->GetServer();
 
-    if($self->{perloki}->{commands}->isFirstPost($from)) {
+    if($self->{perloki}->{commands}->isFirstPost($user)) {
         $response = "This is your first post, now you can use the bot";
     } elsif($body =~ /^NICK /) {
         $body =~ s/NICK//;
@@ -82,7 +85,7 @@ sub _CBMessageChat
         if($body eq "") {
             $response = $self->{perloki}->{commands}->usage();
         } else {
-            $self->{perloki}->{commands}->changeNick($from, $body);
+            $self->{perloki}->{commands}->changeNick($user, $body);
             $response = "Your nick has been changed";
         }
     } elsif($body =~ /^#\+/) {
@@ -93,7 +96,7 @@ sub _CBMessageChat
             $response .= "$post->{text}\n\n";
             $response .= "#$post->{order}\n";
 
-            $self->_sendMessage($from, $response);
+            $self->_sendMessage($user, $response);
         }
         
         return;
@@ -105,22 +108,24 @@ sub _CBMessageChat
         $response .= "$post->{text}\n\n";
         $response .= "#$post->{order}\n";
     } else {
-        my $post = $self->{perloki}->{commands}->addPost($from, $body);
+        my $post = $self->{perloki}->{commands}->addPost($user, $body);
 
         $response = "New message posted #$post->{order}";
     }
 
-    $self->_sendMessage($from, $response);
+    $self->_sendMessage($user, $response);
 }
 
 sub _CBPresenceSubscribe
 {
-    print "Subscribe\n";
-}
+    my ($id, $presence) = @_;
+    my $self = $this;
+    my $from = $presence->GetFrom();
 
-sub _CBPresenceSubscribed
-{
-    print "Subscribed\n";
+    $self->{connection}->Subscription(to => $from, type => 'subscribe');
+    $self->{connection}->Subscription(to => $from, type => 'subscribed');
+    
+    $self->{perloki}->{log}->write("We have subscriber: $from");
 }
 
 1;

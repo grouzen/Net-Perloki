@@ -99,6 +99,7 @@ sub isFirstPost
 
     unless($sth->rows()) {
         $self->_mysqlQueryDo("INSERT INTO `users` (`jid`, `nick`) VALUES ('$from', '$from')");
+
         return 1;
     }
   

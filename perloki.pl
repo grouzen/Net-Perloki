@@ -15,17 +15,16 @@ unless($perloki) {
 }
 my $jabber = Net::Perloki::Jabber->new();
 
-$SIG{INT} = \&quitWithSignal;
-$SIG{TERM} = \&quitWithSignal;
-$SIG{QUIT} = \&quitWithSignal;
-$SIG{HUP} = \&quitWithSignal;
+$SIG{INT} = \&destroyPerloki;
+$SIG{TERM} = \&destroyPerloki;
+$SIG{QUIT} = \&destroyPerloki;
+$SIG{HUP} = \&destroyPerloki;
 
 my $connect_result = $jabber->connect($perloki->{config}->{jabber});
-unless($connect_result) {
-    quitWithSignal();
-}
 
-sub quitWithSignal
+destroyPerloki();
+
+sub destroyPerloki
 {
     $perloki->{storage}->disconnect() if $connect_result > 0;
     $jabber->disconnect();
