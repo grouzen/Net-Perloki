@@ -10,7 +10,7 @@ sub new
     shift;
     my $p = { @_ };
 
-    return $p->{storage}->new($p->{params});
+    return $p->{class}->new($p);
 }
 
 1;

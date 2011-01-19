@@ -15,7 +15,8 @@ sub new
                              dbhost => 'localhost',
                              dbport => 3306,
                              dbuser => 'root',
-                             dbpassword => '976f342b34'}
+                             dbpassword => '976f342b34',
+                             @_ }
     };
 
     $self->{perloki} = Net::Perloki->new();

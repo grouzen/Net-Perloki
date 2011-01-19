@@ -125,7 +125,7 @@ sub _CBPresenceSubscribe
     $self->{connection}->Subscription(to => $from, type => 'subscribe');
     $self->{connection}->Subscription(to => $from, type => 'subscribed');
     
-    $self->{perloki}->{log}->write("We have subscriber: $from");
+    $self->{perloki}->{log}->write("We have subscriber: $from\n");
 }
 
 1;

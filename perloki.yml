@@ -1,13 +1,12 @@
 --- #YAML:1.0
 
-storage:        'Net::Perloki::Mysql'
-
-sparams:
-    dbname:     perloki
-    dbhost:     localhost
-    dbport:     3306
-    dbuser:     root
-    dbpassword: 976f342b34
+storage:                
+    class:              'Net::Perloki::Mysql'
+    dbname:             perloki
+    dbhost:             localhost
+    dbport:             3306
+    dbuser:             root
+    dbpassword:         976f342b34
 
 jabber:
     server:             cisonline.net.ua
@@ -16,4 +15,7 @@ jabber:
     resource:           perloki
     port:               5222
     ssl:                0
-logfile: perloki.log
+
+logfile: 
+    file:               perloki.log
+    stdout:             1
