@@ -29,7 +29,7 @@ sub connect
 
     my $dsn = "DBI:mysql:database=$p->{dbname};host=$p->{dbhost};port=$p->{dbport}";
     $self->{dbh} = DBI->connect($dsn, $p->{dbuser}, $p->{dbpassword}, 
-                                {RaiseError => 1, AutoCommit => 1});
+                                {RaiseError => 1, AutoCommit => 1, mysql_enable_utf8 => 1});
     if(!$self->{dbh}) {
         sleep(1);
         $self->{dbh} = DBI->connect($dsn, $p->{dbuser}, $p->{dbpassword},
@@ -126,7 +126,7 @@ sub getLastPublic
 
     if($sth->rows()) {
         for(my $i = 0; my $post = $sth->fetchrow_hashref(); $i++) {
-            $posts[$i] = { %{$post} };
+            $posts[$i] = $post;
         }
     }
 

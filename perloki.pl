@@ -26,7 +26,7 @@ destroyPerloki();
 
 sub destroyPerloki
 {
-    $perloki->{storage}->disconnect() if $connect_result > 0;
+    $perloki->{storage}->disconnect() if defined($connect_result) && $connect_result > 0;
     $jabber->disconnect();
     $perloki->{log}->close();
 
