@@ -1,0 +1,5 @@
+Net::Perloki
+
+Module for microblogging via jabber.
+It can display information in 
+different ways(web, jabber and so on).
