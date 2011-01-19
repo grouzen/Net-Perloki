@@ -56,7 +56,8 @@ sub usage
     
     my $usage = << "EOF";
 NICK nickname - change your nick.
-#+ - show last 10 messages from public.
+#+ - show last 10 posts from public.
+#123456 - show posts with order 123456.
 EOF
 ;
 
