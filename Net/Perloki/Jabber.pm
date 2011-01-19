@@ -23,9 +23,6 @@ sub new
 sub connect
 {
     my ($self, $params) = @_;
-    foreach my $key (keys %{$params}) {
-        print "$key => $params->{$key}\n";
-    }
     
     $self->{connection} = Net::Jabber::Client->new(debuglevel => 2, debugfile => "stdout");
     $self->{connection}->SetMessageCallBacks(chat => \&_CBMessageChat);
@@ -85,7 +82,7 @@ sub _CBMessageChat
         if($body eq "") {
             $response = $self->{perloki}->{commands}->usage();
         } else {
-            $self->{perloki}->{storage}->changeNick($from, $body);
+            $self->{perloki}->{commands}->changeNick($from, $body);
             $response = "Your nick has been changed";
         }
     } elsif($body =~ /^#\+/) {
