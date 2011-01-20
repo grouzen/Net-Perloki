@@ -18,14 +18,14 @@ sub new
 
 sub connect
 {
-    my ($self, $p) = @_;
+    my ($self) = @_;
 
-    my $dsn = "DBI:mysql:database=$p->{dbname};host=$p->{dbhost};port=$p->{dbport}";
-    $self->{dbh} = DBI->connect($dsn, $p->{dbuser}, $p->{dbpassword}, 
+    my $dsn = "DBI:mysql:database=$self->{params}->{dbname};host=$self->{params}->{dbhost};port=$self->{params}->{dbport}";
+    $self->{dbh} = DBI->connect($dsn, $self->{params}->{dbuser}, $self->{params}->{dbpassword}, 
                                 {RaiseError => 1, AutoCommit => 1, mysql_enable_utf8 => 1});
     if(!$self->{dbh}) {
         sleep(1);
-        $self->{dbh} = DBI->connect($dsn, $p->{dbuser}, $p->{dbpassword},
+        $self->{dbh} = DBI->connect($dsn, $self->{params}->{dbuser}, $self->{params}->{dbpassword},
                                     {RaiseError => 1, AutoCommit => 1, mysql_enable_utf8 => 1});
         if(!$self->{dbh}) {
             $self->{perloki}->{log}->write("$DBI::errstr\n");
@@ -40,7 +40,7 @@ sub connect
 
 sub disconnect
 {
-    my $self = shift;
+    my ($self) = @_;
     $self->{dbh}->disconnect() if defined($self->{dbh});
 }
 
@@ -51,7 +51,7 @@ sub _mysqlQuery
     my $sth = $self->{dbh}->prepare($query);
     return $sth if $sth->execute();
 
-    $self->connect($self->{params});
+    $self->connect();
     $sth = $self->{dbh}->prepare($query);
     return $sth if $sth->execute();
 
@@ -66,7 +66,7 @@ sub _mysqlQueryDo
     my $rows = $self->{dbh}->do($query);
     return $rows if $rows;
 
-    $self->connect($self->{params});
+    $self->connect();
     return $self->{dbh}->do($query);
 }
 
@@ -110,9 +110,9 @@ sub changeNick
 
 sub getLastPublic
 {
-    my $self = shift;
+    my ($self) = @_;
     
-    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`deleted` = 0 GROUP BY `p`.`order` LIMIT 10");
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`deleted` = 0 ORDER BY `p`.`order` DESC LIMIT 10");
     return undef unless $sth;
     
     my @posts = ();

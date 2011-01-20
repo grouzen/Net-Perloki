@@ -13,25 +13,22 @@ my $perloki = Net::Perloki->new($configfile);
 unless($perloki) {
     exit 1;
 }
-my $jabber = Net::Perloki::Jabber->new();
+my $jabber = Net::Perloki::Jabber->new($perloki->{config}->{jabber});
+
+my $process_result = $jabber->process();
+
+destroyPerloki();
 
 $SIG{INT} = \&destroyPerloki;
 $SIG{TERM} = \&destroyPerloki;
 $SIG{QUIT} = \&destroyPerloki;
 $SIG{HUP} = \&destroyPerloki;
 
-my $connect_result = $jabber->connect($perloki->{config}->{jabber});
-
-destroyPerloki();
-
 sub destroyPerloki
 {
-    $perloki->{storage}->disconnect() if defined($connect_result) && $connect_result > 0;
-    $jabber->disconnect();
+    $perloki->{storage}->disconnect();
+    $jabber->disconnect() if defined($process_result) && $process_result > 0;
     $perloki->{log}->close();
 
     exit 0;
 }
-
-exit 0;
-

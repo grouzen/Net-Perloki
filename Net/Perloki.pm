@@ -33,7 +33,7 @@ sub new
         return undef unless $self->{log};
 
         $self->{storage} = Net::Perloki::Storage->new($self->{config}->{storage});
-        return undef unless $self->{storage}->connect($self->{storage}->{params});
+        return undef unless $self->{storage}->connect();
 
         $self->{commands} = Net::Perloki::Commands->new();
     }
