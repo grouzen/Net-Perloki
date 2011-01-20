@@ -155,16 +155,17 @@ sub addPost
 sub deletePost
 {
     my ($self, $from, $order) = @_;
+
     $from = $self->_mysqlEscape($from);
     $order = $self->_mysqlEscape($order);
 
-    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $order LIMIT 1");
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $order AND `deleted` = 0 LIMIT 1");
     return "not exists" unless $sth->rows();
 
-    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $order AND `users_id` = (SELECT `id` FROM `users` WHERE `jid` = '$from')");
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $order AND `users_id` = (SELECT `id` FROM `users` WHERE `jid` = '$from' LIMIT 1)");
     return "not owner" unless $sth->rows();
 
-    $self->_mysqlQueryDo("UPDATE `posts` SET `deleted` = 1 WHERE `order` = $order LIMIT 1");
+    $self->_mysqlQueryDo("UPDATE `posts` SET `deleted` = 1 WHERE `order` = $order");
 
     return "ok";
 }

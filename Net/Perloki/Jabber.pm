@@ -124,9 +124,9 @@ sub _CBMessageChat
         $response .= "$post->{text}\n\n";
         $response .= "#$post->{order}\n";
     } elsif($body =~ /^D\s+#[0-9]+/) {
-        my $body =~ s/^D\s+#([0-9]+)/$1/;
+        $body =~ s/^D\s+#([0-9]+)/$1/;
 
-        my $rc = $self->{perloki}->{commands}->deletePost($from, $body);
+        my $rc = $self->{perloki}->{commands}->deletePost($user, $body);
         if($rc eq "not exists") {
              $response = "Post with such order doesn't exist";
         } elsif($rc eq "not owner") {
