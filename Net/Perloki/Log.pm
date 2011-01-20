@@ -3,15 +3,11 @@ package Net::Perloki::Log;
 use strict;
 use utf8;
 
-use Exporter;
-
 sub new
 {
-    my $class = shift;
-    my $logfile = shift;
-    my $self = { stdout => 0, @_ };
+    my ($class, $self) = @_;
 
-    if(!open(PLOG, ">>$logfile")) {
+    if(!open(PLOG, ">>$self->{file}")) {
         print STDERR " $!\n";
         return undef;
     }

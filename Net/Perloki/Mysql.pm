@@ -8,16 +8,8 @@ use Net::Perloki;
 
 sub new
 {
-    my $class = shift;
-    
-    # TODO: params from yaml.
-    my $self = { params => { dbname => 'perloki',
-                             dbhost => 'localhost',
-                             dbport => 3306,
-                             dbuser => 'root',
-                             dbpassword => '976f342b34',
-                             @_ }
-    };
+    my ($class, $params) = @_;
+    my $self = { params => $params };
 
     $self->{perloki} = Net::Perloki->new();
 

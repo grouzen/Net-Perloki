@@ -8,7 +8,7 @@ use Net::Perloki;
 sub new
 {
     shift;
-    my $p = { @_ };
+    my $p = shift;
 
     return $p->{class}->new($p);
 }

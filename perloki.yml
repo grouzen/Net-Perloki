@@ -1,6 +1,6 @@
 --- #YAML:1.0
 
-storage:                
+storage:
     class:              'Net::Perloki::Mysql'
     dbname:             perloki
     dbhost:             localhost
