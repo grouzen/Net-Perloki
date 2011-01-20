@@ -129,6 +129,7 @@ sub getLastPublic
 sub getPost
 {
     my ($self, $order) = @_;
+    $order = $self->_mysqlEscape($order);
 
     my $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`order` = $order AND `p`.`deleted` = 0 LIMIT 1");
     return undef unless $sth;
@@ -146,13 +147,26 @@ sub addPost
     return undef unless $sth_order;
     my $order = $sth_order->rows() + 1;
 
-    my $sth_users_id = $self->_mysqlQuery("SELECT * FROM `users` WHERE `jid` = '$from' AND `deleted` = 0 LIMIT 1");
-    return undef unless $sth_users_id;
-    my $users_id = $sth_users_id->fetchrow_hashref()->{id};
-
-    $self->_mysqlQueryDo("INSERT INTO `posts` (`order`, `text`, `users_id`) VALUES ($order, '$text', $users_id)");
+    $self->_mysqlQueryDo("INSERT INTO `posts` (`order`, `text`, `users_id`) VALUES ($order, '$text', (SELECT id FROM `users` WHERE `jid` = '$from' LIMIT 1))");
 
     return $self->getPost($order);
+}
+
+sub deletePost
+{
+    my ($self, $from, $order) = @_;
+    $from = $self->_mysqlEscape($from);
+    $order = $self->_mysqlEscape($order);
+
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $order LIMIT 1");
+    return "not exists" unless $sth->rows();
+
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $order AND `users_id` = (SELECT `id` FROM `users` WHERE `jid` = '$from')");
+    return "not owner" unless $sth->rows();
+
+    $self->_mysqlQueryDo("UPDATE `posts` SET `deleted` = 1 WHERE `order` = $order LIMIT 1");
+
+    return "ok";
 }
 
 1;

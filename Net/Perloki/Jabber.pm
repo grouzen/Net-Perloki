@@ -90,11 +90,14 @@ sub _CBMessageChat
 
     if($self->{perloki}->{commands}->isFirstPost($user)) {
         $response = "This is your first post, now you can use the bot";
+    } elsif($body =~ /^HELP/) {
+        $response = $self->{perloki}->{commands}->getHelp();
     } elsif($body =~ /^NICK /) {
         $body =~ s/NICK//;
+        #TODO: limit symbol range
         $body =~ s/^\s*(.*?)\s*$/$1/;
         if($body eq "") {
-            $response = $self->{perloki}->{commands}->usage();
+            $response = $self->{perloki}->{commands}->getHelp();
         } else {
             $self->{perloki}->{commands}->changeNick($user, $body);
             $response = "Your nick has been changed";
@@ -102,7 +105,9 @@ sub _CBMessageChat
     } elsif($body =~ /^#\+/) {
         my @posts = $self->{perloki}->{commands}->getLastPublic();
         
-        foreach my $post (@posts) {
+        for(my $i = $#posts; $i >= 0; $i--) {
+            my $post = $posts[$i];
+
             $response = "\@$post->{nick}:\n";
             $response .= "$post->{text}\n\n";
             $response .= "#$post->{order}\n";
@@ -118,6 +123,17 @@ sub _CBMessageChat
         $response = "\@$post->{nick}:\n";
         $response .= "$post->{text}\n\n";
         $response .= "#$post->{order}\n";
+    } elsif($body =~ /^D\s+#[0-9]+/) {
+        my $body =~ s/^D\s+#([0-9]+)/$1/;
+
+        my $rc = $self->{perloki}->{commands}->deletePost($from, $body);
+        if($rc eq "not exists") {
+             $response = "Post with such order doesn't exist";
+        } elsif($rc eq "not owner") {
+            $response = "This is not your post";
+        } else {
+            $response = "Post deleted";
+        }
     } else {
         my $post = $self->{perloki}->{commands}->addPost($user, $body);
 

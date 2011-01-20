@@ -15,8 +15,7 @@ my $singleton = undef;
 sub new
 {
     unless($singleton) {
-        my $class = shift;
-        my $config = shift;
+        my ($class, $config) = @_;
         
         my $yaml = YAML::Tiny->new();
         $yaml = YAML::Tiny->read($config);

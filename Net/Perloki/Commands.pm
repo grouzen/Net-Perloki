@@ -7,7 +7,7 @@ use Net::Perloki;
 
 sub new
 {
-    my $class = shift;
+    my ($class) = @_;
     my $self = {};
     
     $self->{perloki} = Net::Perloki->new();
@@ -31,7 +31,7 @@ sub changeNick
 
 sub getLastPublic
 {
-    my $self = shift;
+    my ($self) = @_;
 
     return $self->{perloki}->{storage}->getLastPublic();
 }
@@ -50,18 +50,26 @@ sub addPost
     return $self->{perloki}->{storage}->addPost($from, $text);
 }
 
-sub usage
+sub deletePost
 {
-    my $self = shift;
+    my ($self, $from, $order) = @_;
+
+    return $self->{perloki}->{storage}->deletePost($from, $order);
+}
+
+sub getHelp
+{
+    my ($self) = @_;
     
-    my $usage = << "EOF";
+    my $help = << "EOF";
+HELP - show this message.
 NICK nickname - change your nick.
 #+ - show last 10 posts from public.
 #123456 - show posts with order 123456.
 EOF
-;
+; # for correct indentation of emacs
 
-    return $usage;
+    return $help;
 }
 
 1;
