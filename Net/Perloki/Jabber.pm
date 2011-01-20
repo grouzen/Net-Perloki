@@ -24,12 +24,14 @@ sub connect
 {
     my ($self, $params) = @_;
     
-    $self->{connection} = Net::Jabber::Client->new(debuglevel => 2, debugfile => "debug.log");
+    $self->{connection} = Net::Jabber::Client->new(debuglevel => $params->{debuglevel}, 
+                                                   debugfile => $params->{debugfile});
     $self->{connection}->SetMessageCallBacks(chat => \&_CBMessageChat);
     $self->{connection}->SetPresenceCallBacks(subscribe => \&_CBPresenceSubscribe);
     my $jid = Net::Jabber::JID->new($params->{jid});
     
-    my $status = $self->{connection}->Connect(hostname => $params->{server}, port => $params->{port});
+    my $status = $self->{connection}->Connect(hostname => $params->{server}, 
+                                              port => $params->{port});
     unless(defined($status)) {
         $self->{perloki}->{log}->write("Couldn't connect to server: $!\n");
         return 0;

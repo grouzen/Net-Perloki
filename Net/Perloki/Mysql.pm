@@ -26,7 +26,7 @@ sub connect
     if(!$self->{dbh}) {
         sleep(1);
         $self->{dbh} = DBI->connect($dsn, $p->{dbuser}, $p->{dbpassword},
-                                    {RaiseError => 1, AutoCommit => 1});
+                                    {RaiseError => 1, AutoCommit => 1, mysql_enable_utf8 => 1});
         if(!$self->{dbh}) {
             $self->{perloki}->{log}->write("$DBI::errstr\n");
             return 0;
@@ -112,7 +112,7 @@ sub getLastPublic
 {
     my $self = shift;
     
-    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`deleted` = 0 GROUP BY `p`.`order`");
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`deleted` = 0 GROUP BY `p`.`order` LIMIT 10");
     return undef unless $sth;
     
     my @posts = ();

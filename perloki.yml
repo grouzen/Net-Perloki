@@ -15,6 +15,8 @@ jabber:
     resource:           perloki
     port:               5222
     ssl:                0
+    debuglevel:         2
+    debugfile:          debug.log
 
 logfile: 
     file:               perloki.log
