@@ -13,16 +13,6 @@ my $perloki = Net::Perloki->new($configfile);
 unless($perloki) {
     exit 1;
 }
-my $jabber = Net::Perloki::Jabber->new($perloki->{config}->{jabber});
-
-my $process_result = $jabber->process();
-
-destroyPerloki();
-
-$SIG{INT} = \&destroyPerloki;
-$SIG{TERM} = \&destroyPerloki;
-$SIG{QUIT} = \&destroyPerloki;
-$SIG{HUP} = \&destroyPerloki;
 
 sub destroyPerloki
 {
@@ -32,3 +22,14 @@ sub destroyPerloki
 
     exit 0;
 }
+
+$SIG{INT} = \&destroyPerloki;
+$SIG{TERM} = \&destroyPerloki;
+$SIG{QUIT} = \&destroyPerloki;
+$SIG{HUP} = \&destroyPerloki;
+
+my $jabber = Net::Perloki::Jabber->new($perloki->{config}->{jabber});
+
+my $process_result = $jabber->process();
+
+destroyPerloki();

@@ -95,12 +95,16 @@ sub _CBMessageChat
     } elsif($body =~ /^NICK /) {
         $body =~ s/NICK//;
         #TODO: limit symbol range
-        $body =~ s/^\s*(.*?)\s*$/$1/;
+        $body =~ s/^\s*([0-9A-Za-zА-Яа-я_\-@.]+)\s*$/$1/;
         if($body eq "") {
             $response = $self->{perloki}->{commands}->getHelp();
         } else {
-            $self->{perloki}->{commands}->changeNick($user, $body);
-            $response = "Your nick has been changed";
+            my $rc = $self->{perloki}->{commands}->changeNick($user, $body);
+            if($rc eq "exists") {
+                $response = "You cannot use this nick, nick already exists";
+            } else {
+                $response = "Your nick has been changed";
+            }
         }
     } elsif($body =~ /^#\+/) {
         my @posts = $self->{perloki}->{commands}->getLastPublic();
@@ -134,7 +138,27 @@ sub _CBMessageChat
         } else {
             $response = "Post deleted";
         }
-    } else {
+    } elsif($body =~ /^S\s*$/) {
+        my @susers = $self->{perloki}->{commands}->getSubscriptions($user);
+        
+        $response = "You are subscribed to users:\n";
+        
+        foreach my $suser (@susers) {
+            $response .= "$suser->{nick}\n";
+        }
+    } elsif($body =~ /^S\s+@[0-9A-Za-zА-Яа-я_\-@.]+/) {
+        $body =~ s/^S\s+@([0-9A-Za-zА-Яа-я_\-@.]+)/$1/;
+
+        my $rc = $self->{perloki}->{commands}->subscribeToUser($user, $body);
+        if($rc eq "not exists") {
+            $response = "User with such nick doesn't exist";
+        } elsif($rc eq "subscribed") {
+            $response = "You have already subscribed to \@$body";
+        } else {
+            $response = "Subscribed to \@$body";
+        }
+    } else { 
+        # TODO: send messages to subscriber.
         my $post = $self->{perloki}->{commands}->addPost($user, $body);
 
         $response = "New message posted #$post->{order}";
@@ -148,11 +172,13 @@ sub _CBPresenceSubscribe
     my ($id, $presence) = @_;
     my $self = $this;
     my $from = $presence->GetFrom();
+    my $jid = Net::Jabber::JID->new($from);
+    my $user = $jid->GetUserID() . '@' . $jid->GetServer();
 
     $self->{connection}->Subscription(to => $from, type => 'subscribe');
     $self->{connection}->Subscription(to => $from, type => 'subscribed');
     
-    $self->{perloki}->{log}->write("We have subscriber: $from\n");
+    $self->{perloki}->{log}->write("We have subscriber: $user\n");
 }
 
 1;

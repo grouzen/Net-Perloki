@@ -57,6 +57,20 @@ sub deletePost
     return $self->{perloki}->{storage}->deletePost($from, $order);
 }
 
+sub getSubscriptions
+{
+    my ($self, $from) = @_;
+
+    return $self->{perloki}->{storage}->getSubscriptions($from);
+}
+
+sub subscribeToUser
+{
+    my ($self, $from, $to) = @_;
+
+    return $self->{perloki}->{storage}->subscribeToUser($from, $to);
+}
+
 sub getHelp
 {
     my ($self) = @_;
@@ -66,6 +80,8 @@ HELP - show this message.
 NICK nickname - change your nick.
 #+ - show last 10 posts from public.
 #123456 - show posts with order 123456.
+S - show your subscriptions.
+S \@nick - subscribe to user \@nick.
 EOF
 ; # for correct indentation of emacs
 

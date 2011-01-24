@@ -105,7 +105,12 @@ sub changeNick
     $from = $self->_mysqlEscape($from);
     $nick = $self->_mysqlEscape($nick);
 
+    my $sth = $self->_mysqlQuery("SELECT * FROM `users` WHERE `nick` = '$nick'");
+    return "exists" if $sth->rows();
+
     $self->_mysqlQueryDo("UPDATE `users` SET `nick` = '$nick' WHERE `jid` = '$from' LIMIT 1");
+
+    return "ok";
 }
 
 sub getLastPublic
@@ -143,11 +148,11 @@ sub addPost
     $from = $self->_mysqlEscape($from);
     $text = $self->_mysqlEscape($text);
     
-    my $sth_order = $self->_mysqlQuery("SELECT * FROM `posts`");
-    return undef unless $sth_order;
-    my $order = $sth_order->rows() + 1;
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts`");
+    return undef unless $sth;
+    my $order = $sth->rows() + 1;
 
-    $self->_mysqlQueryDo("INSERT INTO `posts` (`order`, `text`, `users_id`) VALUES ($order, '$text', (SELECT id FROM `users` WHERE `jid` = '$from' LIMIT 1))");
+    $self->_mysqlQueryDo("INSERT INTO `posts` (`order`, `text`, `users_id`) VALUES ($order, '$text', (SELECT `id` FROM `users` WHERE `jid` = '$from' LIMIT 1))");
 
     return $self->getPost($order);
 }
@@ -162,10 +167,49 @@ sub deletePost
     my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $order AND `deleted` = 0 LIMIT 1");
     return "not exists" unless $sth->rows();
 
-    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $order AND `users_id` = (SELECT `id` FROM `users` WHERE `jid` = '$from' LIMIT 1)");
+    $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $order AND `users_id` = (SELECT `id` FROM `users` WHERE `jid` = '$from' LIMIT 1)");
     return "not owner" unless $sth->rows();
 
     $self->_mysqlQueryDo("UPDATE `posts` SET `deleted` = 1 WHERE `order` = $order");
+
+    return "ok";
+}
+
+sub getSubscriptions
+{
+    my ($self, $from) = @_;
+
+    my $sth = $self->_mysqlQuery("SELECT * FROM `users` WHERE `id` IN((SELECT `to` FROM `subscriptions_users` WHERE `from` = (SELECT `id` FROM `users` WHERE `jid` = '$from'))) ORDER BY `nick`");
+    my @users = ();
+
+    if($sth->rows()) {
+        for(my $i = 0; my $user = $sth->fetchrow_hashref(); $i++) {
+            $users[$i] = $user;
+        }
+    }
+
+    return @users;
+}
+
+sub subscribeToUser
+{
+    my ($self, $from, $to) = @_;
+    $from = $self->_mysqlEscape($from);
+    $to = $self->_mysqlEscape($to);
+
+    my $sth = $self->_mysqlQuery("SELECT * FROM `users` WHERE `nick` = '$to' LIMIT 1");
+    return "not exists" unless $sth->rows();
+
+    my $sth_from = $self->_mysqlQuery("SELECT * FROM `users` WHERE `jid` = '$from' LIMIT 1");
+    my $id_from = $sth_from->fetchrow_hashref()->{id};
+
+    my $sth_to = $self->_mysqlQuery("SELECT * FROM `users` WHERE `nick` = '$to' LIMIT 1");
+    my $id_to = $sth_to->fetchrow_hashref()->{id};
+
+    $sth = $self->_mysqlQuery("SELECT * FROM `subscriptions_users` WHERE `from` = $id_from AND `to` = $id_to");
+    return "subscribed" if $sth->rows();
+    
+    $self->_mysqlQueryDo("INSERT INTO `subscriptions_users` (`from`, `to`) VALUES ($id_from, $id_to)");
 
     return "ok";
 }
