@@ -178,13 +178,14 @@ sub deletePost
 sub getSubscriptions
 {
     my ($self, $from) = @_;
+    $from = $self->_mysqlEscape($from);
 
     my $sth = $self->_mysqlQuery("SELECT * FROM `users` WHERE `id` IN((SELECT `to` FROM `subscriptions_users` WHERE `from` = (SELECT `id` FROM `users` WHERE `jid` = '$from'))) ORDER BY `nick`");
     my @users = ();
 
     if($sth->rows()) {
-        for(my $i = 0; my $user = $sth->fetchrow_hashref(); $i++) {
-            $users[$i] = $user;
+        while(my $user = $sth->fetchrow_hashref()) {
+            push(@users, $user);
         }
     }
 
@@ -212,6 +213,23 @@ sub subscribeToUser
     $self->_mysqlQueryDo("INSERT INTO `subscriptions_users` (`from`, `to`) VALUES ($id_from, $id_to)");
 
     return "ok";
+}
+
+sub getSubscribersToUser
+{
+    my ($self, $to) = @_;
+    $to = $self->_mysqlEscape($to);
+
+    my $sth = $self->_mysqlQuery("SELECT * FROM `users` WHERE `id` IN((SELECT `from` FROM `subscriptions_users` WHERE `to` = (SELECT `id` FROM `users` WHERE `jid` = '$to'))) ORDER BY `nick`");
+    my @users = ();
+
+    if($sth->rows()) {
+        while(my $user = $sth->fetchrow_hashref()) {
+            push(@users, $user);
+        }
+    }
+
+    return $users;
 }
 
 1;

@@ -108,15 +108,15 @@ sub _CBMessageChat
         }
     } elsif($body =~ /^#\+/) {
         my @posts = $self->{perloki}->{commands}->getLastPublic();
-        
-        for(my $i = $#posts; $i >= 0; $i--) {
-            my $post = $posts[$i];
+
+        while(@posts) {
+            my $post = pop(@posts);
 
             $response = "\@$post->{nick}:\n";
             $response .= "$post->{text}\n\n";
             $response .= "#$post->{order}\n";
 
-            $self->_sendMessage($user, $response);
+            $self->_sendMessage($from, $response);
         }
         
         return;
@@ -144,7 +144,7 @@ sub _CBMessageChat
         $response = "You are subscribed to users:\n";
         
         foreach my $suser (@susers) {
-            $response .= "$suser->{nick}\n";
+            $response .= "\@$suser->{nick}\n";
         }
     } elsif($body =~ /^S\s+@[0-9A-Za-zА-Яа-я_\-@.]+/) {
         $body =~ s/^S\s+@([0-9A-Za-zА-Яа-я_\-@.]+)/$1/;
@@ -158,13 +158,24 @@ sub _CBMessageChat
             $response = "Subscribed to \@$body";
         }
     } else { 
-        # TODO: send messages to subscriber.
         my $post = $self->{perloki}->{commands}->addPost($user, $body);
 
         $response = "New message posted #$post->{order}";
+        
+        my $message = "\@$post->{nick}:\n";
+        $message .= "$post->{text}\n\n";
+        $message .= "#$post->{order}\n";
+
+        my @susers = $self->{perloki}->{storage}->getSubscribersToUser($user);
+
+        while(@susers) {
+            my $suser = pop(@susers);
+
+            $self->_sendMessage($suser->{jid}, $message);
+        }
     }
 
-    $self->_sendMessage($user, $response);
+    $self->_sendMessage($from, $response);
 }
 
 sub _CBPresenceSubscribe
