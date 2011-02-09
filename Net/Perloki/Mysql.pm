@@ -123,8 +123,8 @@ sub getLastPublic
     my @posts = ();
 
     if($sth->rows()) {
-        for(my $i = 0; my $post = $sth->fetchrow_hashref(); $i++) {
-            $posts[$i] = $post;
+        while(my $post = $sth->fetchrow_hashref()) {
+            push(@posts, $post);
         }
     }
 
@@ -134,10 +134,20 @@ sub getLastPublic
 sub getPost
 {
     my ($self, $order) = @_;
-    $order = $self->_mysqlEscape($order);
+    $order = int($order);
 
     my $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`order` = $order AND `p`.`deleted` = 0 LIMIT 1");
-    return undef unless $sth;
+
+    return $sth->fetchrow_hashref();
+}
+
+sub getCommentToPost
+{
+    my ($self, $post_order, $comment_order) = @_;
+    $post_order = int($post_order);
+    $comment_order = int($comment_order);
+
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts_comments` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`order` = $comment_order AND `p`.`deleted` = 0 AND `p`.`posts_id` = (SELECT `id` FROM `posts` WHERE `order` = $post_order AND `deleted` = 0)");
 
     return $sth->fetchrow_hashref();
 }
@@ -147,22 +157,73 @@ sub addPost
     my ($self, $from, $text) = @_;
     $from = $self->_mysqlEscape($from);
     $text = $self->_mysqlEscape($text);
-    
-    my $sth = $self->_mysqlQuery("SELECT * FROM `posts`");
-    return undef unless $sth;
-    my $order = $sth->rows() + 1;
+    my @rc = ();
 
-    $self->_mysqlQueryDo("INSERT INTO `posts` (`order`, `text`, `users_id`) VALUES ($order, '$text', (SELECT `id` FROM `users` WHERE `jid` = '$from' LIMIT 1))");
+    if(length(Encoding::encode_utf8($text)) > 10240) {
+        $rc[0] = "max length exceeded";
+    } else {
+        my $sth = $self->_mysqlQuery("SELECT * FROM `posts`");
+        
+        my $sth_order = $self->_mysqlQuery("SELECT MAX(`order`) AS `max_order` FROM `posts`");
+        my $order = $sth_order->fetchrow_hashref()->{max_order} + 1;
+        
+        $self->_mysqlQueryDo("INSERT INTO `posts` (`order`, `text`, `users_id`) VALUES ($order, '$text', (SELECT `id` FROM `users` WHERE `jid` = '$from' LIMIT 1))");
 
-    return $self->getPost($order);
+        $rc[1] = $self->getPost($order);
+        $rc[0] = "ok":
+    }
+
+    return @rc;
+}
+
+sub addCommentToPost
+{
+    my ($self, $from, $post_order, $comment_order, $text) = @_;
+    $from = $self->_mysqlEscape($from);
+    $post_order = int($post_order);
+    $comment_order = int($comment_order);
+    $text = $self->_mysqlEscape($text);
+    my @rc = ();
+
+    if(length(Encoding::encode_utf8($text)) > 4096) {
+        $rc[0] = "max length exceeded";
+    } else {
+        my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `deleted` = 0 AND `order` = $post_order LIMIT 1");
+        unless($sth->rows()) {
+            $rc[0] = "post not exists";
+        } else {
+            my $posts_id = $sth->fetchrow_hashref()->{id};
+            
+            $sth = $self->_mysqlQuery("SELECT * FROM `posts_comments` WHERE `deleted` = 0 AND `order` = $comment_order");
+            my $comments_id = 0;
+            if($comment_order > 0) {
+                unless($sth->rows()) {
+                    $rc[0] = "comment not exists";
+                } else {
+                    $comments_id = $sth->fetchrow_hashref()->{id};
+                }
+            }
+            
+            my $sth_order = $self->_mysqlQuery("SELECT MAX(`order`) AS `max_order` FROM `posts_comments`");
+            my $order = $sth_order->fetchrow_hashref()->{max_order} + 1;
+
+            $self->_mysqlQueryDo("INSERT INTO `posts_comments` (`users_id`, `posts_id`, `posts_comments_id`, `text`, `order`) VALUES ((SELECT `id` FROM `users` WHERE `jid` = $from), $posts_id, $comments_id, '$text', $order)");
+            
+            
+            $rc[1] = $self->getCommentToPost($post_order, $order);
+            $rc[1]->{reply} = $self->getCommentToPost($post_order, $comment_order) if $comment_order > 0;
+            $rc[0] = "ok";
+        }
+    }
+
+    return @rc;
 }
 
 sub deletePost
 {
     my ($self, $from, $order) = @_;
-
     $from = $self->_mysqlEscape($from);
-    $order = $self->_mysqlEscape($order);
+    $order = int($order);
 
     my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $order AND `deleted` = 0 LIMIT 1");
     return "not exists" unless $sth->rows();
@@ -215,12 +276,52 @@ sub subscribeToUser
     return "ok";
 }
 
+sub subscribeToPost
+{
+    my ($self, $from, $to) = @_;
+    $from = $self->_mysqlEscape($from);
+    $to = int($to);
+
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $to LIMIT 1");
+    return "not exists" unless $sth->rows();
+
+    my $sth_from = $self->_mysqlQuery("SELECT * FROM `users` WHERE `jid` = '$from' LIMIT 1");
+    my $id_from = $sth_from->fetchrow_hashref()->{id};
+
+    my $sth_to = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $to LIMIT 1");
+    my $id_to = $sth_to->fetchrow_hashref()->{id};
+
+    my $sth_subscriptions = $selft->_mysqlQuery("SELECT * FROM `subscriptions_posts` WHERE `from` = $id_from AND `to` = $id_to");
+    unless($sth_subscriptions->rows()) {
+        $self->_mysqlQueryDo("INSERT INTO `subscriptions_posts` (`from`, `to`) VALUES ($id_from, $id_to)");
+    }
+
+    return "ok";
+}
+
 sub getSubscribersToUser
 {
     my ($self, $to) = @_;
     $to = $self->_mysqlEscape($to);
 
     my $sth = $self->_mysqlQuery("SELECT * FROM `users` WHERE `id` IN((SELECT `from` FROM `subscriptions_users` WHERE `to` = (SELECT `id` FROM `users` WHERE `jid` = '$to'))) ORDER BY `nick`");
+    my @users = ();
+
+    if($sth->rows()) {
+        while(my $user = $sth->fetchrow_hashref()) {
+            push(@users, $user);
+        }
+    }
+
+    return @users;
+}
+
+sub getSubscribersToPost
+{
+    my ($self, $to) = @_;
+    $to = int($to);
+
+    my $sth = $self->_mysqlQuery("SELECT * FROM `users` WHERE `id` IN((SELECT `from` FROM `subscriptions_posts` WHERE `to` = $to)) ORDER BY `nick`");
     my @users = ();
 
     if($sth->rows()) {

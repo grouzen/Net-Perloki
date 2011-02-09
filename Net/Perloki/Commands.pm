@@ -80,6 +80,8 @@ HELP - show this message.
 NICK nickname - change your nick.
 #+ - show last 10 posts from public.
 #123456 - show posts with order 123456.
+#123456 comment's text - add comment to post with order 123456.
+#123456/123 comment's text - add comment to comment with order 123 from post with order 123456.
 S - show your subscriptions.
 S \@nick - subscribe to user \@nick.
 EOF
