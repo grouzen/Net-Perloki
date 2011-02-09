@@ -117,7 +117,7 @@ sub getLastPublic
 {
     my ($self) = @_;
     
-    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`deleted` = 0 ORDER BY `p`.`order` ASC LIMIT 10");
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`deleted` = 0 ORDER BY `p`.`order` DESC LIMIT 10");
     return undef unless $sth;
     
     my @posts = ();
@@ -154,7 +154,7 @@ sub getCommentToPost
 
 sub getListCommentsToPost
 {
-    my ($self, $post_order, $comments_from_order, $comment_to_order) = @_;
+    my ($self, $post_order, $comments_from_order, $comments_to_order) = @_;
     $post_order = int($post_order);
     $comments_from_order = int($comments_from_order);
     $comments_to_order = int($comments_to_order);
@@ -222,7 +222,7 @@ sub addCommentToPost
             my $posts_id = $sth->fetchrow_hashref()->{id};
             
             $sth = $self->_mysqlQuery("SELECT * FROM `posts_comments` WHERE `deleted` = 0 AND `order` = $comment_order");
-            unless($sth->rows() && $comment_order > 0) {
+            if(!$sth->rows() && $comment_order > 0) {
                 $rc[0] = "comment not exists";
             } else {
                 my $comments_id = 0;

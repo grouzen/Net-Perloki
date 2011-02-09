@@ -89,7 +89,8 @@ sub _CBMessageChat
     my $user = $jid->GetUserID() . '@' . $jid->GetServer();
 
     if($self->{perloki}->{commands}->isFirstPost($user)) {
-        $response = "This is your first post, now you can use the bot";
+        $response = "This is your first post, now you can use the bot\n";
+        $response .= "Now you can type HELP for getting help about using the bot.";
     } elsif($body =~ /^HELP/) {
         $response = $self->{perloki}->{commands}->getHelp();
     } elsif($body =~ /^NICK /) {
@@ -109,7 +110,9 @@ sub _CBMessageChat
     } elsif($body =~ /^#\+/) {
         my @posts = $self->{perloki}->{commands}->getLastPublic();
 
-        foreach my $post (@posts) {
+        while(@posts) {
+            my $post = pop(@posts);
+            
             $response = "\@$post->{nick}:\n";
             $response .= "$post->{text}\n\n";
             $response .= "#$post->{order}";
@@ -175,7 +178,7 @@ sub _CBMessageChat
                 $message .= "\@$rc[1]->{reply}->{nick} ";
             }
             $message .= "$rc[1]->{text}\n\n";
-            $message .= "#$rc[1]->{order}";
+            $message .= "#$post_order/$rc[1]->{order}";
 
             my @susers = $self->{perloki}->{storage}->getSubscribersToPost($post_order);
 
