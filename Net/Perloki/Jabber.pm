@@ -118,7 +118,7 @@ sub _CBMessageChat
         }
         
         return;
-    } elsif($body =~ /^#[0-9]+\+\s+[0-9]*\s+[0-9]*/) {
+    } elsif($body =~ /^#([0-9]+\+|[0-9]+\+\s+[0-9]+|[0-9]+\+\s+[0-9]+\s+[0-9]+)/) {
         my $comments_from_order = 0;
         my $comments_to_order = 0;
         my ($post_order) = $body =~ /^#([0-9]+)/;
@@ -131,12 +131,12 @@ sub _CBMessageChat
             $comments_to_order = $1;
         }
 
-        my @comments = $self->{perloki}->{commands}->getListCommentsPost($post_order, $comments_from_order, $comments_to_order);
+        my @comments = $self->{perloki}->{commands}->getListCommentsToPost($post_order, $comments_from_order, $comments_to_order);
 
         foreach my $comment (@comments) {
             $comment->{reply} = $self->{perloki}->{storage}->getCommentToPost($post_order, $comment->{order}) if $comment->{posts_comments_id} > 0;
 
-            $response = "\@comment->{nick}:\n";
+            $response = "\@$comment->{nick}:\n";
             if(defined($comment->{reply})) {
                 $response .= "\@$comment->{reply}->{nick} ";
             }

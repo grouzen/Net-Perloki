@@ -117,7 +117,7 @@ sub getLastPublic
 {
     my ($self) = @_;
     
-    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`deleted` = 0 ORDER BY `p`.`order` DESC LIMIT 10");
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`deleted` = 0 ORDER BY `p`.`order` ASC LIMIT 10");
     return undef unless $sth;
     
     my @posts = ();
@@ -161,11 +161,9 @@ sub getListCommentsToPost
     my $sth;
 
     if($comments_from_order > 0 && $comments_to_order > 0) {
-        $sth = $self->_mysqlQuery("SELECT * FROM `posts_comments` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`order` > $comments_from_order AND `p`.`order` < $comments_to_order AND `p`.`deleted` = 0 AND `p`.`posts_id` = (SELECT `id` FROM `posts` WHERE `order` = $post_order AND `deleted` = 0)");
+        $sth = $self->_mysqlQuery("SELECT * FROM `posts_comments` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`order` > $comments_from_order AND `p`.`order` <= $comments_to_order AND `p`.`deleted` = 0 AND `p`.`posts_id` = (SELECT `id` FROM `posts` WHERE `order` = $post_order AND `deleted` = 0)");
     } elsif($comments_from_order > 0 && $comments_to_order == 0) {
         $sth = $self->_mysqlQuery("SELECT * FROM `posts_comments` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`order` > $comments_from_order AND `p`.`deleted` = 0 AND `p`.`posts_id` = (SELECT `id` FROM `posts` WHERE `order` = $post_order AND `deleted` = 0)");
-    } elsif($comments_from_order == 0 && $comments_to_order > 0) {
-        $sth = $self->_mysqlQuery("SELECT * FROM `posts_comments` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`order` < $comments_to_order AND `p`.`deleted` = 0 AND `p`.`posts_id` = (SELECT `id` FROM `posts` WHERE `order` = $post_order AND `deleted` = 0)");
     } else {
         $sth = $self->_mysqlQuery("SELECT * FROM `posts_comments` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`deleted` = 0 AND `p`.`posts_id` = (SELECT `id` FROM `posts` WHERE `order` = $post_order AND `deleted` = 0)");
     }
