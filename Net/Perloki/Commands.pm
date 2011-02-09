@@ -50,6 +50,13 @@ sub addPost
     return $self->{perloki}->{storage}->addPost($from, $text);
 }
 
+sub addCommentToPost
+{
+    my ($self, $from, $post_order, $comment_order, $text) = @_;
+
+    return $self->{perloki}->{storage}->addCommentToPost($from, $post_order, $comment_order, $text);
+}
+
 sub deletePost
 {
     my ($self, $from, $order) = @_;

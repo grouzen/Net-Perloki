@@ -159,7 +159,7 @@ sub addPost
     $text = $self->_mysqlEscape($text);
     my @rc = ();
 
-    if(length(Encoding::encode_utf8($text)) > 10240) {
+    if(length(Encode::encode_utf8($text)) > 10240) {
         $rc[0] = "max length exceeded";
     } else {
         my $sth = $self->_mysqlQuery("SELECT * FROM `posts`");
@@ -170,7 +170,7 @@ sub addPost
         $self->_mysqlQueryDo("INSERT INTO `posts` (`order`, `text`, `users_id`) VALUES ($order, '$text', (SELECT `id` FROM `users` WHERE `jid` = '$from' LIMIT 1))");
 
         $rc[1] = $self->getPost($order);
-        $rc[0] = "ok":
+        $rc[0] = "ok";
     }
 
     return @rc;
@@ -184,8 +184,8 @@ sub addCommentToPost
     $comment_order = int($comment_order);
     $text = $self->_mysqlEscape($text);
     my @rc = ();
-
-    if(length(Encoding::encode_utf8($text)) > 4096) {
+    
+    if(length(Encode::encode_utf8($text)) > 4096) {
         $rc[0] = "max length exceeded";
     } else {
         my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `deleted` = 0 AND `order` = $post_order LIMIT 1");
@@ -195,24 +195,20 @@ sub addCommentToPost
             my $posts_id = $sth->fetchrow_hashref()->{id};
             
             $sth = $self->_mysqlQuery("SELECT * FROM `posts_comments` WHERE `deleted` = 0 AND `order` = $comment_order");
-            my $comments_id = 0;
-            if($comment_order > 0) {
-                unless($sth->rows()) {
-                    $rc[0] = "comment not exists";
-                } else {
-                    $comments_id = $sth->fetchrow_hashref()->{id};
-                }
+            unless($sth->rows() && $comment_order > 0) {
+                $rc[0] = "comment not exists";
+            } else {
+                my $comments_id = 0;
+                my $sth_order = $self->_mysqlQuery("SELECT MAX(`order`) AS `max_order` FROM `posts_comments`");
+                my $order = $sth_order->fetchrow_hashref()->{max_order} + 1;
+                
+                $comments_id = $sth->fetchrow_hashref()->{id} if $comment_order > 0;
+                $self->_mysqlQueryDo("INSERT INTO `posts_comments` (`users_id`, `posts_id`, `posts_comments_id`, `text`, `order`) VALUES ((SELECT `id` FROM `users` WHERE `jid` = '$from'), $posts_id, $comments_id, '$text', $order)");
+                
+                $rc[1] = $self->getCommentToPost($post_order, $order);
+                $rc[1]->{reply} = $self->getCommentToPost($post_order, $comment_order) if $comment_order > 0;
+                $rc[0] = "ok";
             }
-            
-            my $sth_order = $self->_mysqlQuery("SELECT MAX(`order`) AS `max_order` FROM `posts_comments`");
-            my $order = $sth_order->fetchrow_hashref()->{max_order} + 1;
-
-            $self->_mysqlQueryDo("INSERT INTO `posts_comments` (`users_id`, `posts_id`, `posts_comments_id`, `text`, `order`) VALUES ((SELECT `id` FROM `users` WHERE `jid` = $from), $posts_id, $comments_id, '$text', $order)");
-            
-            
-            $rc[1] = $self->getCommentToPost($post_order, $order);
-            $rc[1]->{reply} = $self->getCommentToPost($post_order, $comment_order) if $comment_order > 0;
-            $rc[0] = "ok";
         }
     }
 
@@ -291,7 +287,7 @@ sub subscribeToPost
     my $sth_to = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `order` = $to LIMIT 1");
     my $id_to = $sth_to->fetchrow_hashref()->{id};
 
-    my $sth_subscriptions = $selft->_mysqlQuery("SELECT * FROM `subscriptions_posts` WHERE `from` = $id_from AND `to` = $id_to");
+    my $sth_subscriptions = $self->_mysqlQuery("SELECT * FROM `subscriptions_posts` WHERE `from` = $id_from AND `to` = $id_to");
     unless($sth_subscriptions->rows()) {
         $self->_mysqlQueryDo("INSERT INTO `subscriptions_posts` (`from`, `to`) VALUES ($id_from, $id_to)");
     }
@@ -321,7 +317,7 @@ sub getSubscribersToPost
     my ($self, $to) = @_;
     $to = int($to);
 
-    my $sth = $self->_mysqlQuery("SELECT * FROM `users` WHERE `id` IN((SELECT `from` FROM `subscriptions_posts` WHERE `to` = $to)) ORDER BY `nick`");
+    my $sth = $self->_mysqlQuery("SELECT * FROM `users` WHERE `id` IN((SELECT `from` FROM `subscriptions_posts` WHERE `to` = (SELECT `id` FROM `posts` WHERE `order` = $to))) ORDER BY `nick`");
     my @users = ();
 
     if($sth->rows()) {
@@ -330,7 +326,7 @@ sub getSubscribersToPost
         }
     }
 
-    return $users;
+    return @users;
 }
 
 1;

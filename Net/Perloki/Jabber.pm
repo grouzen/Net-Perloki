@@ -120,22 +120,18 @@ sub _CBMessageChat
         }
         
         return;
-    } elsif($body =~ /^#[0-9]+[\/]{,1}[0-9]*\s+.*$/) {
+    } elsif($body =~ /^#[0-9]+[\/]?[0-9]*\s+.*$/) {
         my $post_order = 0;
         my $comment_order = 0;
         my $text = "";
 
-        $body =~ /^#([0-9]+)/;
-        $post_order = $1;
-        
+        ($post_order) = $body =~ /^#([0-9]+)/;
         if($body =~ /^#[0-9]+\/([0-9]+)/) {
             $comment_order = $1;
         }
+        ($text) = $body =~ /^#[0-9]+[\/]?[0-9]*\s+(.*)$/;
 
-        $body =~ /^[0-9]+[\/]{,1}[0-9]*\s+(.*)$/;
-        $text = $1;
-
-        my $rc = $this->{perloki}->{commands}->addCommentToPost($user, $post_order, $comment_order, $text);
+        my @rc = $this->{perloki}->{commands}->addCommentToPost($user, $post_order, $comment_order, $text);
         if($rc[0] eq "post not exists") {
             $response = "Post, you are replying to, not found";
         } elsif($rc[0] eq "comment not exists") {
@@ -143,22 +139,21 @@ sub _CBMessageChat
         } elsif($rc[0] eq "max length exceeded") { 
             $response = "Maximal length of the message must be less than 4096 bytes";
         } else {
-            $response = "Reply posted";
+            $response = "Reply posted #$post_order/$rc[1]->{order}";
 
             $self->{perloki}->{storage}->subscribeToPost($user, $post_order);
 
             my $message = "\@$rc[1]->{nick}:\n";
             if(defined($rc[1]->{reply})) {
-                $message .= "\@$rc[1]->{reply}->{nick} $rc[1]->{text}\n\n";
-            } else {
-                $message .= "$rc[1]->{text}\n\n";
+                $message .= "\@$rc[1]->{reply}->{nick} ";
             }
-            $message .= "$rc[1]->{order}";
+            $message .= "$rc[1]->{text}\n\n";
+            $message .= "#$rc[1]->{order}";
 
             my @susers = $self->{perloki}->{storage}->getSubscribersToPost($post_order);
 
             foreach my $suser (@susers) {
-                $self->_sendMessage($suser->{jid}, $message);
+                $self->_sendMessage($suser->{jid}, $message) unless $suser->{jid} eq $user;
             }
         }
     } elsif($body =~ /^#[0-9]+/) {
@@ -199,11 +194,11 @@ sub _CBMessageChat
             $response = "Subscribed to \@$body";
         }
     } else { 
-        my $rc = $self->{perloki}->{commands}->addPost($user, $body);
+        my @rc = $self->{perloki}->{commands}->addPost($user, $body);
         if($rc[0] eq "max length exceeded") {
             $response = "Maximal length of the post must be less than 10240 bytes";
         } else {
-            $response = "New message posted #$post->{order}";
+            $response = "New message posted #$rc[1]->{order}";
             
             my $message = "\@$rc[1]->{nick}:\n";
             $message .= "$rc[1]->{text}\n\n";
