@@ -4,10 +4,10 @@ use strict;
 use utf8;
 
 use YAML::Tiny;
-use Net::Perloki::Jabber;
+use Net::Perloki::Jabber::Jabber;
+use Net::Perloki::Jabber::Commands;
 use Net::Perloki::Storage;
 use Net::Perloki::Mysql;
-use Net::Perloki::Commands;
 use Net::Perloki::Log;
 
 my $singleton = undef;

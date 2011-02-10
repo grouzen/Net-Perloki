@@ -122,7 +122,7 @@ sub _CBMessageChat
             $self->_sendMessage($from, $response);
         }
         
-        $self->_sendMessage($from, "\nTotal posts: " . $self->{perloki}->{storage}->getPostsCount() . "."); 
+        $self->_sendMessage($from, "Total posts: " . $self->{perloki}->{storage}->getPostsCount() . "."); 
         
         return;
     } elsif($body =~ /^#([0-9]+\+|[0-9]+\+\s+[0-9]+|[0-9]+\+\s+[0-9]+\s+[0-9]+)/) {
@@ -131,7 +131,7 @@ sub _CBMessageChat
         my $post = $self->{perloki}->{commands}->getPost($post_order);
         $response = "\@$post->{nick}:\n";
         $response .= "$post->{text}\n\n";
-        $response .= "$post->{order}";
+        $response .= "#$post->{order}";
         $self->_sendMessage($from, $response);
 
         my @comments = $self->{perloki}->{commands}->getListCommentsToPost($post_order, $comments_from_order, $comments_to_order);
