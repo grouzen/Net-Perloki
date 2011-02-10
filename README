@@ -1,7 +1,7 @@
 Net::Perloki
 
 Module for microblogging via jabber.
-The main idea is comfortable using of service
+The main idea is comfortable using of the service
 via jabber interface without of needing to start
 your browser, but anyway it can display information in 
-different ways(web, jabber and so on).
+different ways(web, jabber, and so on).

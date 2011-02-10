@@ -107,8 +107,10 @@ sub _CBMessageChat
                 $response = "Your nick has been changed";
             }
         }
-    } elsif($body =~ /^#\+/) {
-        my @posts = $self->{perloki}->{commands}->getLastPublic();
+    } elsif($body =~ /^#(\+|\+\s+[0-9]+|\+\s+[0-9]+\s+[0-9]+)/) {
+        my ($from_order, $to_order) = $body =~ /^#\+\s+([0-9]+)\s+([0-9]+)/;
+        
+        my @posts = $self->{perloki}->{commands}->getLastPublic($from_order, $to_order);
 
         while(@posts) {
             my $post = pop(@posts);

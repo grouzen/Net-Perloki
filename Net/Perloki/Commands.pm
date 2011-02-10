@@ -93,11 +93,12 @@ sub getHelp
 HELP - show this message.
 NICK nickname - change your nick.
 #+ - show last 10 posts from public.
+#+ 3 5 - show posts with orders between 3 and 5.
 #123456 - show posts with order 123456.
 #123456 comment's text - add comment to post with order 123456.
 #123456/123 comment's text - add comment to comment with order 123 from post with order 123456.
 #123456+ - show all comments from post with order 123456.
-#123456+ 12 34 - show comments between orders 12 and 34 from post with order 123456.
+#123456+ 12 34 - show comments with orders between 12 and 34 from post with order 123456.
 S - show your subscriptions.
 S \@nick - subscribe to user \@nick.
 EOF

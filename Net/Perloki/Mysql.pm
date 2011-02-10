@@ -115,10 +115,18 @@ sub changeNick
 
 sub getLastPublic
 {
-    my ($self) = @_;
+    my ($self, $from_order, $to_order) = @_;
+    $from_order = int($from_order);
+    $to_order = int($to_order);
+    my $sth;
     
-    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`deleted` = 0 ORDER BY `p`.`order` DESC LIMIT 10");
-    return undef unless $sth;
+    if($from_order > 0 && $to_order > 0) {
+        $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`order` > $from_order AND `p`.`order` <= $to_order AND `p`.`deleted` = 0 ORDER BY `p`.`order` DESC");
+    } elsif($from_order > 0 && $to_order == 0) {
+        $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`order` > $from_order AND `p`.`deleted` = 0 ORDER BY `p`.`order` DESC");
+    } else {
+        $sth = $self->_mysqlQuery("SELECT * FROM `posts` `p` LEFT JOIN `users` `u` ON `p`.`users_id` = `u`.`id` WHERE `p`.`deleted` = 0 ORDER BY `p`.`order` DESC LIMIT 10");
+    }
     
     my @posts = ();
 
@@ -226,7 +234,7 @@ sub addCommentToPost
                 $rc[0] = "comment not exists";
             } else {
                 my $comments_id = 0;
-                my $sth_order = $self->_mysqlQuery("SELECT MAX(`order`) AS `max_order` FROM `posts_comments`");
+                my $sth_order = $self->_mysqlQuery("SELECT MAX(`order`) AS `max_order` FROM `posts_comments` WHERE `posts_id` = $posts_id");
                 my $order = $sth_order->fetchrow_hashref()->{max_order} + 1;
                 
                 $comments_id = $sth->fetchrow_hashref()->{id} if $comment_order > 0;
