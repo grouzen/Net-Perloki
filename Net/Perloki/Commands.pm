@@ -31,9 +31,9 @@ sub changeNick
 
 sub getLastPublic
 {
-    my ($self) = @_;
+    my ($self, $from_order, $to_order) = @_;
 
-    return $self->{perloki}->{storage}->getLastPublic();
+    return $self->{perloki}->{storage}->getLastPublic($from_order, $to_order);
 }
 
 sub getPost

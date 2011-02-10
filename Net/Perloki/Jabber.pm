@@ -108,7 +108,7 @@ sub _CBMessageChat
             }
         }
     } elsif($body =~ /^#(\+|\+\s+[0-9]+|\+\s+[0-9]+\s+[0-9]+)/) {
-        my ($from_order, $to_order) = $body =~ /^#\+\s+([0-9]+)\s+([0-9]+)/;
+        my ($from_order, $to_order) = $body =~ /^#\+\s+([0-9]+)\s*([0-9]*)/;
         
         my @posts = $self->{perloki}->{commands}->getLastPublic($from_order, $to_order);
 
@@ -122,22 +122,20 @@ sub _CBMessageChat
             $self->_sendMessage($from, $response);
         }
         
+        $self->_sendMessage($from, "\nTotal posts: " . $self->{perloki}->{storage}->getPostsCount() . "."); 
+        
         return;
     } elsif($body =~ /^#([0-9]+\+|[0-9]+\+\s+[0-9]+|[0-9]+\+\s+[0-9]+\s+[0-9]+)/) {
-        my $comments_from_order = 0;
-        my $comments_to_order = 0;
-        my ($post_order) = $body =~ /^#([0-9]+)/;
+        my ($post_order, $comments_from_order, $comments_to_order) = $body =~ /^#([0-9]+)\+\s*([0-9]*)\s*([0-9]*)/;
         
-        if($body =~ /^#[0-9]+\+\s+([0-9]+)/) {
-            $comments_from_order = $1;
-        }
-
-        if($body =~ /^#[0-9]+\+\s+[0-9]+\s+([0-9]+)/) {
-            $comments_to_order = $1;
-        }
+        my $post = $self->{perloki}->{commands}->getPost($post_order);
+        $response = "\@$post->{nick}:\n";
+        $response .= "$post->{text}\n\n";
+        $response .= "$post->{order}";
+        $self->_sendMessage($from, $response);
 
         my @comments = $self->{perloki}->{commands}->getListCommentsToPost($post_order, $comments_from_order, $comments_to_order);
-
+        
         foreach my $comment (@comments) {
             $comment->{reply} = $self->{perloki}->{storage}->getCommentToPost($post_order, $comment->{order}) if $comment->{posts_comments_id} > 0;
 
@@ -146,10 +144,12 @@ sub _CBMessageChat
                 $response .= "\@$comment->{reply}->{nick} ";
             }
             $response .= "$comment->{text}\n\n";
-            $response .= "#$comment->{order}";
+            $response .= "#$post_order/$comment->{order}";
 
             $self->_sendMessage($from, $response);
         }
+
+        $self->_sendMessage($from, "Total comments: " . $self->{perloki}->{storage}->getCommentsToPostCount($post_order) . ".");
 
         return;
     } elsif($body =~ /^#[0-9]+[\/]?[0-9]*\s+.*$/) {

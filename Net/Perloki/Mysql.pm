@@ -113,6 +113,25 @@ sub changeNick
     return "ok";
 }
 
+sub getCommentsToPostCount
+{
+    my ($self, $order) = @_;
+    $order = int($order);
+
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts_comments` WHERE `deleted` = 0 AND `posts_id` = (SELECT `id` FROM `posts` WHERE `order` = $order)");
+
+    return $sth->rows();
+}
+
+sub getPostsCount
+{
+    my ($self) = @_;
+
+    my $sth = $self->_mysqlQuery("SELECT * FROM `posts` WHERE `deleted` = 0");
+    
+    return $sth->rows();
+}
+
 sub getLastPublic
 {
     my ($self, $from_order, $to_order) = @_;
