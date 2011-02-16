@@ -89,7 +89,7 @@ sub _CBMessageChat
     my $user = $jid->GetUserID() . '@' . $jid->GetServer();
 
     if($self->{perloki}->{commands}->isFirstPost($user)) {
-        $response = "This is your first post, now you can use the bot\n";
+        $response = "This is your first post, now you can use the bot.\n";
         $response .= "Now you can type HELP for getting help about using the bot.";
     } elsif($body =~ /^HELP/) {
         $response = $self->{perloki}->{commands}->getHelp();
@@ -225,14 +225,26 @@ sub _CBMessageChat
         } else {
             $response = "Subscribed to \@$body";
         }
-    } else { 
+    } else {
+        my @tags = $body =~ /\*([^\s.]+)/g;
+        $body =~ s/^.+\s+([^\*]+)/$1/;
+
         my @rc = $self->{perloki}->{commands}->addPost($user, $body);
         if($rc[0] eq "max length exceeded") {
             $response = "Maximal length of the post must be less than 10240 bytes";
         } else {
+            $self->{perloki}->{commands}->addTags($user, $rc[1]->{order}, @tags);
             $response = "New message posted #$rc[1]->{order}";
             
-            my $message = "\@$rc[1]->{nick}:\n";
+            @tags = $self->{perloki}->{commands}->getTagsFromPost($rc[1]->{order});
+            my $with_tags = "";
+            if($#tags >= 0) {
+                foreach my $tag (@tags) {
+                    $with_tags .= "*$tag ";
+                }
+            }
+
+            my $message = "\@$rc[1]->{nick}: $with_tags\n";
             $message .= "$rc[1]->{text}\n\n";
             $message .= "#$rc[1]->{order}";
             

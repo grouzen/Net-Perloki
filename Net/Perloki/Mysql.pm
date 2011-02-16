@@ -230,6 +230,35 @@ sub addPost
     return @rc;
 }
 
+sub addTags
+{
+    my ($self, $from, $order, @tags) = @_;
+    $from = self->_mysqlEscape($from);
+    $order = int($order);
+    
+    foreach my $tag (@tags) {
+        $tag = self->_mysqlEscape($tag);
+
+        $self->_mysqlQueryDo("INSERT INTO `tags` (`users_id`, `posts_id`, `tag`) VALUES ((SELECT `id` FROM `users` WHERE `jid` = '$from' LIMIT 1), (SELECT `id` FROM `posts` WHERE `order` = $order LIMIT 1), '$tag')");
+    }
+}
+
+sub getTagsFromPost
+{
+    my ($self, $order) = @_;
+    $order = int($order);
+    my @tags = ();
+
+    my $sth = $self->_mysqlQuery("SELECT * FROM `tags` WHERE `posts_id` = (SELECT `id` FROM `posts` WHERE `order` = $order LIMIT 1)");
+    return @tags unless $sth->rows();
+
+    while(my $fetch = $sth->fetchrow_hashref()) {
+        push(@tags, $fetch->{tag});
+    }
+
+    return @tags;
+}
+
 sub addCommentToPost
 {
     my ($self, $from, $post_order, $comment_order, $text) = @_;

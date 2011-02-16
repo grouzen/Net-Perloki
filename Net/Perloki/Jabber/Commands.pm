@@ -85,6 +85,20 @@ sub subscribeToUser
     return $self->{perloki}->{storage}->subscribeToUser($from, $to);
 }
 
+sub addTags
+{
+    my ($self, $from, $order, @tags) = @_;
+
+    return $self->{perloki}->{storage}->addTags($from, $order, @tags);
+}
+
+sub getTagsFromPost
+{
+    my ($self, $order) = @_;
+
+    return $self->{perloki}->{storage}->getTagsFromPost($order);
+}
+
 sub getHelp
 {
     my ($self) = @_;
@@ -92,6 +106,8 @@ sub getHelp
     my $help = << "EOF";
 HELP - show this message.
 NICK nickname - change your nick.
+post's text - just add new post.
+*tag1 *tag2 *tagN post's text - add new post with tags.
 #+ - show last 10 posts from public.
 #+ 3 5 - show posts with orders between 3 and 5.
 #123456 - show posts with order 123456.
@@ -99,7 +115,7 @@ NICK nickname - change your nick.
 #123456/123 comment's text - add comment to comment with order 123 from post with order 123456.
 #123456+ - show all comments from post with order 123456.
 #123456+ 12 34 - show comments with orders between 12 and 34 from post with order 123456.
-S - show your subscriptions.
+S - show your subscriptions to users, tags, and clubs.
 S \@nick - subscribe to user \@nick.
 EOF
 ; # for correct indentation of emacs
