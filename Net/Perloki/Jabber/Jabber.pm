@@ -114,8 +114,15 @@ sub _CBMessageChat
 
         while(@posts) {
             my $post = pop(@posts);
-            
-            $response = "\@$post->{nick}:\n";
+            my @tags = $self->{perloki}->{commands}->getTagsFromPost($post->{order});
+            my $with_tags = "";
+            if($#tags >= 0) {
+                foreach my $tag (@tags) {
+                    $with_tags .= "*$tag ";
+                }
+            }
+
+            $response = "\@$post->{nick}: $with_tags\n";
             $response .= "$post->{text}\n\n";
             $response .= "#$post->{order}";
 
@@ -127,9 +134,16 @@ sub _CBMessageChat
         return;
     } elsif($body =~ /^#([0-9]+\+|[0-9]+\+\s+[0-9]+|[0-9]+\+\s+[0-9]+\s+[0-9]+)/) {
         my ($post_order, $comments_from_order, $comments_to_order) = $body =~ /^#([0-9]+)\+\s*([0-9]*)\s*([0-9]*)/;
-        
+        my @tags = $self->{perloki}->{commands}->getTagsFromPost($post_order);
+        my $with_tags = "";
+        if($#tags >= 0) {
+            foreach my $tag (@tags) {
+                $with_tags .= "*$tag ";
+            }
+        }
+
         my $post = $self->{perloki}->{commands}->getPost($post_order);
-        $response = "\@$post->{nick}:\n";
+        $response = "\@$post->{nick}: $with_tags\n";
         $response .= "$post->{text}\n\n";
         $response .= "#$post->{order}";
         $self->_sendMessage($from, $response);
@@ -191,8 +205,15 @@ sub _CBMessageChat
     } elsif($body =~ /^#[0-9]+/) {
         $body =~ s/^#([0-9]+)/$1/;
         my $post = $self->{perloki}->{commands}->getPost($body);
+        my @tags = $self->{perloki}->{commands}->getTagsFromPost($post->{order});
+        my $with_tags = "";
+        if($#tags >= 0) {
+            foreach my $tag (@tags) {
+                $with_tags .= "*$tag ";
+            }
+        }
 
-        $response = "\@$post->{nick}:\n";
+        $response = "\@$post->{nick}: $with_tags\n";
         $response .= "$post->{text}\n\n";
         $response .= "#$post->{order}";
     } elsif($body =~ /^D\s+#[0-9]+/) {
@@ -227,7 +248,7 @@ sub _CBMessageChat
         }
     } else {
         my @tags = $body =~ /\*([^\s.]+)/g;
-        $body =~ s/^.+\s+([^\*]+)/$1/;
+        $body =~ s/^.+?\s+([^\*]+.+)$/$1/;
 
         my @rc = $self->{perloki}->{commands}->addPost($user, $body);
         if($rc[0] eq "max length exceeded") {

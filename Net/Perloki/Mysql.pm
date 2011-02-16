@@ -233,11 +233,11 @@ sub addPost
 sub addTags
 {
     my ($self, $from, $order, @tags) = @_;
-    $from = self->_mysqlEscape($from);
+    $from = $self->_mysqlEscape($from);
     $order = int($order);
     
     foreach my $tag (@tags) {
-        $tag = self->_mysqlEscape($tag);
+        $tag = $self->_mysqlEscape($tag);
 
         $self->_mysqlQueryDo("INSERT INTO `tags` (`users_id`, `posts_id`, `tag`) VALUES ((SELECT `id` FROM `users` WHERE `jid` = '$from' LIMIT 1), (SELECT `id` FROM `posts` WHERE `order` = $order LIMIT 1), '$tag')");
     }
