@@ -2,6 +2,7 @@ package Net::Perloki::Jabber;
 
 use strict;
 use utf8;
+no warnings 'utf8';
 
 use Net::Jabber;
 use Net::Perloki;
@@ -247,8 +248,12 @@ sub _CBMessageChat
             $response = "Subscribed to \@$body";
         }
     } else {
-        my @tags = $body =~ /\*([^\s.]+)/g;
-        $body =~ s/^.+?\s+([^\*]+.+)$/$1/;
+        my $post_tags = $body;
+        $post_tags = s/^\s*((\*[\S]+\s*)*)\s+[^\*]?.+$/$1/;
+        
+        my @tags = $post_tags =~ /\*([^\s.]+)/g;
+
+        $body =~ s/^\s*(\*[\S]+\s*)*\s*([^\*]?.+)$/$2/;
 
         my @rc = $self->{perloki}->{commands}->addPost($user, $body);
         if($rc[0] eq "max length exceeded") {
