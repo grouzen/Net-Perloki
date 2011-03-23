@@ -3,6 +3,8 @@ package Net::Perloki::Log;
 use strict;
 use utf8;
 
+use FileHandle;
+
 sub new
 {
     my ($class, $self) = @_;
@@ -11,6 +13,8 @@ sub new
         print STDERR " $!\n";
         return undef;
     }
+
+    PLOG->autoflush();
 
     return bless($self, $class);
 }

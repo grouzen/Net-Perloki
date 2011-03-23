@@ -29,11 +29,11 @@ sub changeNick
     $self->{perloki}->{storage}->changeNick($from, $nick);
 }
 
-sub getLastPublic
+sub getPosts
 {
     my ($self, $from_order, $to_order) = @_;
 
-    return $self->{perloki}->{storage}->getLastPublic($from_order, $to_order);
+    return $self->{perloki}->{storage}->getPosts($from_order, $to_order);
 }
 
 sub getPost

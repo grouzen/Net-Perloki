@@ -22,11 +22,11 @@ sub connect
 
     my $dsn = "DBI:mysql:database=$self->{params}->{dbname};host=$self->{params}->{dbhost};port=$self->{params}->{dbport}";
     $self->{dbh} = DBI->connect($dsn, $self->{params}->{dbuser}, $self->{params}->{dbpassword}, 
-                                {RaiseError => 1, AutoCommit => 1, mysql_enable_utf8 => 1});
+                                {RaiseError => 0, AutoCommit => 1, mysql_enable_utf8 => 1});
     if(!$self->{dbh}) {
         sleep(1);
         $self->{dbh} = DBI->connect($dsn, $self->{params}->{dbuser}, $self->{params}->{dbpassword},
-                                    {RaiseError => 1, AutoCommit => 1, mysql_enable_utf8 => 1});
+                                    {RaiseError => 0, AutoCommit => 1, mysql_enable_utf8 => 1});
         if(!$self->{dbh}) {
             $self->{perloki}->{log}->write("$DBI::errstr\n");
             return 0;
@@ -132,7 +132,7 @@ sub getPostsCount
     return $sth->rows();
 }
 
-sub getLastPublic
+sub getPosts
 {
     my ($self, $from_order, $to_order) = @_;
     $from_order = int($from_order);

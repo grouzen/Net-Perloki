@@ -111,7 +111,7 @@ sub _CBMessageChat
     } elsif($body =~ /^#(\+|\+\s+[0-9]+|\+\s+[0-9]+\s+[0-9]+)/) {
         my ($from_order, $to_order) = $body =~ /^#\+\s+([0-9]+)\s*([0-9]*)/;
         
-        my @posts = $self->{perloki}->{commands}->getLastPublic($from_order, $to_order);
+        my @posts = $self->{perloki}->{commands}->getPosts($from_order, $to_order);
 
         while(@posts) {
             my $post = pop(@posts);
@@ -249,9 +249,9 @@ sub _CBMessageChat
         }
     } else {
         my $post_tags = $body;
-        $post_tags = s/^\s*((\*[\S]+\s*)*)\s+[^\*]?.+$/$1/;
+        $post_tags =~ s/^\s*((\*[\S]+\s*)*)\s+[^\*]?.+$/$1/;
         
-        my @tags = $post_tags =~ /\*([^\s.]+)/g;
+        my @tags = $post_tags =~ /\*([\S]+)/g;
 
         $body =~ s/^\s*(\*[\S]+\s*)*\s*([^\*]?.+)$/$2/;
 
@@ -296,7 +296,7 @@ sub _CBPresenceSubscribe
     $self->{connection}->Subscription(to => $from, type => 'subscribe');
     $self->{connection}->Subscription(to => $from, type => 'subscribed');
     
-    $self->{perloki}->{log}->write("We have subscriber: $user\n");
+    $self->{perloki}->{log}->write("We have new subscriber: $user\n");
 }
 
 1;
