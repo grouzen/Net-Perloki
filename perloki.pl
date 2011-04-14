@@ -19,16 +19,16 @@ $SIG{TERM} = \&destroyPerloki;
 $SIG{QUIT} = \&destroyPerloki;
 $SIG{HUP} = \&destroyPerloki;
 
-my $jabber = Net::Perloki::Jabber->new($perloki->{config}->{jabber});
+$perloki->{jabber} = Net::Perloki::Jabber->new($perloki->{config}->{jabber});
 
-my $process_result = $jabber->process();
+my $process_result = $perloki->{jabber}->process();
 
 destroyPerloki();
 
 sub destroyPerloki
 {
     $perloki->{storage}->disconnect();
-    $jabber->disconnect() if defined($process_result) && $process_result > 0;
+    $perloki->{jabber}->disconnect() if defined($process_result) && $process_result > 0;
     $perloki->{log}->close();
 
     exit 0;

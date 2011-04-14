@@ -72,7 +72,7 @@ sub disconnect
     $self->{connection}->Disconnect();
 }
 
-sub _sendMessage
+sub sendMessage
 {
     my ($self, $to, $body) = @_;
 
@@ -95,194 +95,28 @@ sub _CBMessageChat
     } elsif($body =~ /^HELP/) {
         $response = $self->{perloki}->{commands}->getHelp();
     } elsif($body =~ /^NICK /) {
-        $body =~ s/NICK//;
-        #TODO: limit symbol range
-        $body =~ s/^\s*([0-9A-Za-zА-Яа-я_\-@.]+)\s*$/$1/;
-        if($body eq "") {
-            $response = $self->{perloki}->{commands}->getHelp();
-        } else {
-            my $rc = $self->{perloki}->{commands}->changeNick($user, $body);
-            if($rc eq "exists") {
-                $response = "You cannot use this nick, nick already exists";
-            } else {
-                $response = "Your nick has been changed";
-            }
-        }
+        $response = $self->{perloki}->{commands}->changeNick($user, $body);
     } elsif($body =~ /^#(\+|\+\s+[0-9]+|\+\s+[0-9]+\s+[0-9]+)/) {
-        my ($from_order, $to_order) = $body =~ /^#\+\s+([0-9]+)\s*([0-9]*)/;
-        
-        my @posts = $self->{perloki}->{commands}->getPosts($from_order, $to_order);
-
-        while(@posts) {
-            my $post = pop(@posts);
-            my @tags = $self->{perloki}->{commands}->getTagsFromPost($post->{order});
-            my $with_tags = "";
-            if($#tags >= 0) {
-                foreach my $tag (@tags) {
-                    $with_tags .= "*$tag ";
-                }
-            }
-
-            $response = "\@$post->{nick}: $with_tags\n";
-            $response .= "$post->{text}\n\n";
-            $response .= "#$post->{order}";
-
-            $self->_sendMessage($from, $response);
-        }
-        
-        $self->_sendMessage($from, "Total posts: " . $self->{perloki}->{storage}->getPostsCount() . "."); 
-        
+        $self->{perloki}->{commands}->getPosts($from, $body);        
         return;
     } elsif($body =~ /^#([0-9]+\+|[0-9]+\+\s+[0-9]+|[0-9]+\+\s+[0-9]+\s+[0-9]+)/) {
-        my ($post_order, $comments_from_order, $comments_to_order) = $body =~ /^#([0-9]+)\+\s*([0-9]*)\s*([0-9]*)/;
-        my @tags = $self->{perloki}->{commands}->getTagsFromPost($post_order);
-        my $with_tags = "";
-        if($#tags >= 0) {
-            foreach my $tag (@tags) {
-                $with_tags .= "*$tag ";
-            }
-        }
-
-        my $post = $self->{perloki}->{commands}->getPost($post_order);
-        $response = "\@$post->{nick}: $with_tags\n";
-        $response .= "$post->{text}\n\n";
-        $response .= "#$post->{order}";
-        $self->_sendMessage($from, $response);
-
-        my @comments = $self->{perloki}->{commands}->getListCommentsToPost($post_order, $comments_from_order, $comments_to_order);
-        
-        foreach my $comment (@comments) {
-            $comment->{reply} = $self->{perloki}->{storage}->getCommentToPost($post_order, $comment->{order}) if $comment->{posts_comments_id} > 0;
-
-            $response = "\@$comment->{nick}:\n";
-            if(defined($comment->{reply})) {
-                $response .= "\@$comment->{reply}->{nick} ";
-            }
-            $response .= "$comment->{text}\n\n";
-            $response .= "#$post_order/$comment->{order}";
-
-            $self->_sendMessage($from, $response);
-        }
-
-        $self->_sendMessage($from, "Total comments: " . $self->{perloki}->{storage}->getCommentsToPostCount($post_order) . ".");
-
+        $self->{perloki}->{commands}->getListCommentsToPost($from, $body);
         return;
     } elsif($body =~ /^#[0-9]+[\/]?[0-9]*\s+.*$/) {
-        my $post_order = 0;
-        my $comment_order = 0;
-        my $text = "";
-
-        ($post_order) = $body =~ /^#([0-9]+)/;
-        if($body =~ /^#[0-9]+\/([0-9]+)/) {
-            $comment_order = $1;
-        }
-        ($text) = $body =~ /^#[0-9]+[\/]?[0-9]*\s+(.*)$/;
-
-        my @rc = $this->{perloki}->{commands}->addCommentToPost($user, $post_order, $comment_order, $text);
-        if($rc[0] eq "post not exists") {
-            $response = "Post, you are replying to, not found";
-        } elsif($rc[0] eq "comment not exists") {
-            $response = "Comment, you are replying to, not found";
-        } elsif($rc[0] eq "max length exceeded") { 
-            $response = "Maximal length of the message must be less than 4096 bytes";
-        } else {
-            $response = "Reply posted #$post_order/$rc[1]->{order}";
-
-            $self->{perloki}->{storage}->subscribeToPost($user, $post_order);
-
-            my $message = "\@$rc[1]->{nick}:\n";
-            if(defined($rc[1]->{reply})) {
-                $message .= "\@$rc[1]->{reply}->{nick} ";
-            }
-            $message .= "$rc[1]->{text}\n\n";
-            $message .= "#$post_order/$rc[1]->{order}";
-
-            my @susers = $self->{perloki}->{storage}->getSubscribersToPost($post_order);
-
-            foreach my $suser (@susers) {
-                $self->_sendMessage($suser->{jid}, $message) unless $suser->{jid} eq $user;
-            }
-        }
+        $response = $self->{perloki}->{commands}->addCommentToPost($from, $body);
     } elsif($body =~ /^#[0-9]+/) {
-        $body =~ s/^#([0-9]+)/$1/;
-        my $post = $self->{perloki}->{commands}->getPost($body);
-        my @tags = $self->{perloki}->{commands}->getTagsFromPost($post->{order});
-        my $with_tags = "";
-        if($#tags >= 0) {
-            foreach my $tag (@tags) {
-                $with_tags .= "*$tag ";
-            }
-        }
-
-        $response = "\@$post->{nick}: $with_tags\n";
-        $response .= "$post->{text}\n\n";
-        $response .= "#$post->{order}";
+        $response = $self->{perloki}->{commands}->getPost($body);
     } elsif($body =~ /^D\s+#[0-9]+/) {
-        $body =~ s/^D\s+#([0-9]+)/$1/;
-
-        my $rc = $self->{perloki}->{commands}->deletePost($user, $body);
-        if($rc eq "not exists") {
-             $response = "Post with such order doesn't exist";
-        } elsif($rc eq "not owner") {
-            $response = "This is not your post";
-        } else {
-            $response = "Post deleted";
-        }
+        $response = $self->{perloki}->{commands}->deletePost($user, $body);
     } elsif($body =~ /^S\s*$/) {
-        my @susers = $self->{perloki}->{commands}->getSubscriptions($user);
-        
-        $response = "You are subscribed to users:\n";
-        
-        foreach my $suser (@susers) {
-            $response .= "\@$suser->{nick}\n";
-        }
+        $response = $self->{perloki}->{commands}->getSubscriptions($user);
     } elsif($body =~ /^S\s+@[0-9A-Za-zА-Яа-я_\-@.]+/) {
-        $body =~ s/^S\s+@([0-9A-Za-zА-Яа-я_\-@.]+)/$1/;
-
-        my $rc = $self->{perloki}->{commands}->subscribeToUser($user, $body);
-        if($rc eq "not exists") {
-            $response = "User with such nick doesn't exist";
-        } elsif($rc eq "subscribed") {
-            $response = "You have already subscribed to \@$body";
-        } else {
-            $response = "Subscribed to \@$body";
-        }
+        $response = $self->{perloki}->{commands}->subscribeToUser($user, $body);
     } else {
-        my $post_tags = $body;
-        $post_tags =~ s/^\s*((\*[\S]+\s*)*)\s+[^\*]?.+$/$1/;
-        
-        my @tags = $post_tags =~ /\*([\S]+)/g;
-
-        $body =~ s/^\s*(\*[\S]+\s*)*\s*([^\*]?.+)$/$2/;
-
-        my @rc = $self->{perloki}->{commands}->addPost($user, $body);
-        if($rc[0] eq "max length exceeded") {
-            $response = "Maximal length of the post must be less than 10240 bytes";
-        } else {
-            $self->{perloki}->{commands}->addTags($user, $rc[1]->{order}, @tags);
-            $response = "New message posted #$rc[1]->{order}";
-            
-            @tags = $self->{perloki}->{commands}->getTagsFromPost($rc[1]->{order});
-            my $with_tags = "";
-            if($#tags >= 0) {
-                foreach my $tag (@tags) {
-                    $with_tags .= "*$tag ";
-                }
-            }
-
-            my $message = "\@$rc[1]->{nick}: $with_tags\n";
-            $message .= "$rc[1]->{text}\n\n";
-            $message .= "#$rc[1]->{order}";
-            
-            my @susers = $self->{perloki}->{storage}->getSubscribersToUser($user);
-            
-            foreach my $suser (@susers) {
-                $self->_sendMessage($suser->{jid}, $message);
-            }
-        }
+        $response = $self->{perloki}->{commands}->addPost($user, $from, $body);
     }
 
-    $self->_sendMessage($from, $response);
+    $self->sendMessage($from, $response);
 }
 
 sub _CBPresenceSubscribe
