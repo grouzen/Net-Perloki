@@ -4,8 +4,6 @@ use strict;
 use utf8;
 
 use YAML::Tiny;
-use Net::Perloki::Jabber::Jabber;
-use Net::Perloki::Jabber::Commands;
 use Net::Perloki::Storage;
 use Net::Perloki::Mysql;
 use Net::Perloki::Log;
@@ -33,8 +31,6 @@ sub new
 
         $self->{storage} = Net::Perloki::Storage->new($self->{config}->{storage});
         return undef unless $self->{storage}->connect();
-
-        $self->{commands} = Net::Perloki::Commands->new();
     }
     
     return $singleton;

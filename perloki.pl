@@ -3,6 +3,7 @@
 use strict;
 
 use Net::Perloki;
+use Net::Perloki::Jabber;
 
 my $configfile = 'perloki.yml';
 if($#ARGV > -1) {
@@ -21,14 +22,14 @@ $SIG{HUP} = \&destroyPerloki;
 
 my $jabber = Net::Perloki::Jabber->new($perloki->{config}->{jabber});
 
-my $process_result = $jabber->process();
+my $process_result = $jabber->{xmpp}->process();
 
 destroyPerloki();
 
 sub destroyPerloki
 {
     $perloki->{storage}->disconnect();
-    $jabber->disconnect() if defined($process_result) && $process_result > 0;
+    $jabber->{xmpp}->disconnect() if defined($process_result) && $process_result > 0;
     $perloki->{log}->close();
 
     exit 0;
