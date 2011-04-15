@@ -4,8 +4,8 @@ use strict;
 use utf8;
 no warnings 'utf8';
 
-use Net::Perloki::XMPP;
-use Net::Perloki::Commands;
+use Net::Perloki::Jabber::XMPP;
+use Net::Perloki::Jabber::Commands;
 
 my $singleton = undef;
 

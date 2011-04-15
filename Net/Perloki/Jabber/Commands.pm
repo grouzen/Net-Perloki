@@ -50,7 +50,8 @@ sub getPosts
 {
     my ($self, $from, $command) = @_;
     my ($from_order, $to_order) = $command =~ /^#\+\s+([0-9]+)\s*([0-9]*)/;
-    
+    my $response;
+
     my @posts = $self->{perloki}->{storage}->getPosts($from_order, $to_order);
 
     while(@posts) {
@@ -179,7 +180,7 @@ sub addPost
 
 sub addCommentToPost
 {
-    my ($self, $from, $command) = @_;
+    my ($self, $user, $command) = @_;
     my $post_order = 0;
     my $comment_order = 0;
     my $text = "";
@@ -191,7 +192,7 @@ sub addCommentToPost
     }
     ($text) = $command =~ /^#[0-9]+[\/]?[0-9]*\s+(.*)$/;
 
-    my @rc = $this->{perloki}->{storage}->addCommentToPost($user, $post_order, $comment_order, $text);
+    my @rc = $self->{perloki}->{storage}->addCommentToPost($user, $post_order, $comment_order, $text);
     if($rc[0] eq "post not exists") {
         $response = "Post, you are replying to, not found";
     } elsif($rc[0] eq "comment not exists") {
@@ -223,6 +224,8 @@ sub addCommentToPost
 sub deletePost
 {
     my ($self, $user, $command) = @_;
+    my $response;
+
     $command =~ s/^D\s+#([0-9]+)/$1/;
 
     my $rc = $self->{perloki}->{storage}->deletePost($user, $command);
@@ -255,6 +258,7 @@ sub getSubscriptions
 sub subscribeToUser
 {
     my ($self, $user, $command) = @_;
+    my $response;
 
     $command =~ s/^S\s+@([0-9A-Za-zА-Яа-я_\-@.]+)/$1/;
 
