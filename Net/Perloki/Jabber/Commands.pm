@@ -4,13 +4,15 @@ use strict;
 use utf8;
 
 use Net::Perloki;
+use Net::Perloki::Jabber;
 
 sub new
 {
     my ($class) = @_;
     my $self = {};
-    
+
     $self->{perloki} = Net::Perloki->new();
+    $self->{jabber} = Net::Perloki::Jabber->new();
 
     return bless($self, $class);
 }
@@ -31,7 +33,7 @@ sub changeNick
     #TODO: limit symbol range
     $command =~ s/^\s*([0-9A-Za-zА-Яа-я_\-@.]+)\s*$/$1/;
     if($command eq "") {
-        $response = $self->{perloki}->{commands}->getHelp();
+        $response = $self->{jabber}->{commands}->getHelp();
     } else {
         my $rc = $self->{perloki}->{storage}->changeNick($user, $command);
         if($rc eq "exists") {
@@ -65,10 +67,10 @@ sub getPosts
         $response .= "$post->{text}\n\n";
         $response .= "#$post->{order}";
 
-        $self->{perloki}->{jabber}->sendMessage($from, $response);
+        $self->{jabber}->{xmpp}->sendMessage($from, $response);
     }
     
-    $self->{perloki}->{jabber}->sendMessage($from, "Total posts: " . $self->{perloki}->{storage}->getPostsCount() . "."); 
+    $self->{jabber}->{xmpp}->sendMessage($from, "Total posts: " . $self->{perloki}->{storage}->getPostsCount() . "."); 
 }
 
 sub getPost
@@ -114,7 +116,7 @@ sub getListCommentsToPost
     $response = "\@$post->{nick}: $with_tags\n";
     $response .= "$post->{text}\n\n";
     $response .= "#$post->{order}";
-    $self->{perloki}->{jabber}->sendMessage($from, $response);
+    $self->{jabber}->{xmpp}->sendMessage($from, $response);
 
     my @comments = $self->{perloki}->{storage}->getListCommentsToPost($post_order, $comments_from_order, $comments_to_order);
     
@@ -128,10 +130,10 @@ sub getListCommentsToPost
         $response .= "$comment->{text}\n\n";
         $response .= "#$post_order/$comment->{order}";
 
-        $self->{perloki}->{jabber}->sendMessage($from, $response);
+        $self->{jabber}->{xmpp}->sendMessage($from, $response);
     }
 
-    $self->{perloki}->{jabber}->sendMessage($from, "Total comments: " . $self->{perloki}->{storage}->getCommentsToPostCount($post_order) . ".");
+    $self->{jabber}->{xmpp}->sendMessage($from, "Total comments: " . $self->{perloki}->{storage}->getCommentsToPostCount($post_order) . ".");
 }
 
 sub addPost
@@ -168,7 +170,7 @@ sub addPost
         my @susers = $self->{perloki}->{storage}->getSubscribersToUser($user);
         
         foreach my $suser (@susers) {
-            $self->{perloki}->{jabber}->sendMessage($suser->{jid}, $message);
+            $self->{jabber}->{xmpp}->sendMessage($suser->{jid}, $message);
         }
     }
 
@@ -211,7 +213,7 @@ sub addCommentToPost
         my @susers = $self->{perloki}->{storage}->getSubscribersToPost($post_order);
 
         foreach my $suser (@susers) {
-            $self->{perloki}->{jabber}->sendMessage($suser->{jid}, $message) unless $suser->{jid} eq $user;
+            $self->{jabber}->{xmpp}->sendMessage($suser->{jid}, $message) unless $suser->{jid} eq $user;
         }
     }
 
@@ -240,7 +242,7 @@ sub getSubscriptions
     my ($self, $user) = @_;
     my $response;
 
-    my @susers = $self->{perloki}->{commands}->getSubscriptions($user);
+    my @susers = $self->{perloki}->{storage}->getSubscriptions($user);
     
     $response = "You are subscribed to users:\n";
     foreach my $suser (@susers) {
@@ -267,20 +269,6 @@ sub subscribeToUser
 
     return $response;
 }
-
-#sub addTags
-#{
-#    my ($self, $from, $order, @tags) = @_;
-#
-#    return $self->{perloki}->{storage}->addTags($from, $order, @tags);
-#}
-
-#sub getTagsFromPost
-#{
-#    my ($self, $order) = @_;
-#
-#    return $self->{perloki}->{storage}->getTagsFromPost($order);
-#}
 
 sub getHelp
 {
