@@ -1,4 +1,4 @@
-package Net::Perloki::Commands;
+package Net::Perloki::Jabber::Commands;
 
 use strict;
 use utf8;
@@ -49,6 +49,7 @@ sub changeNick
 sub getPosts
 {
     my ($self, $from, $command) = @_;
+    # TODO: fix undefined values.
     my ($from_order, $to_order) = $command =~ /^#\+\s+([0-9]+)\s*([0-9]*)/;
     my $response;
 

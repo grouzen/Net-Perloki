@@ -1,4 +1,4 @@
-package Net::Perloki::XMPP;
+package Net::Perloki::Jabber::XMPP;
 
 use strict;
 use utf8;

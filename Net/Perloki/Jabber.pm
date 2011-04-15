@@ -15,10 +15,10 @@ sub new
         my ($class, $params) = @_;
         my $self = { params => $params };
         
+        $singleton = bless($self, $class);
+
         $self->{xmpp} = Net::Perloki::XMPP->new($params);
-        $self->{commands} = Net::Perloki::Commands->new();
-        
-        return bless($self, $class);
+        $self->{commands} = Net::Perloki::Commands->new();        
     }
 
     return $singleton;
